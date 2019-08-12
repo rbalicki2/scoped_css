@@ -1,0 +1,17 @@
+[package]
+name = "smithy_css"
+description = "Scoped css for Smithy"
+version = "0.0.1"
+authors = ["Robert Balicki <robert.balicki@gmail.com>"]
+edition = "2018"
+keywords = ["web", "javascript", "webassembly", "wasm", "frontend", "css"]
+categories = ["gui", "web-programming"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/rbalicki2/smithy_css"
+homepage = "https://www.smithy.rs"
+# documentation = "https://docs.smithy.rs/smithy"
+
+[dependencies]
+smithy_css_macro = { path = "../smithy_css_macro", version = "0.0.1" }
+
+[features]

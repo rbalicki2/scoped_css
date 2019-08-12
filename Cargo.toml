@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+  "crates/smithy_css",
+  "crates/smithy_css_macro",
+]
