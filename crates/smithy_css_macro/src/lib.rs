@@ -48,13 +48,13 @@ fn get_group_contents<'a>(
 
 /// Parse and yield the contents of a group, if that group is the first item
 /// in the token stream
-fn parse_group_with_delimiter(
-  input: TokenTreeSlice,
+fn parse_group_with_delimiter<'a>(
+  input: TokenTreeSlice<'a>,
   delimiter: Option<Delimiter>,
-) -> TokenStreamIResult<TokenTreeVec> {
+) -> TokenStreamIResult<'a, TokenTreeSlice<'a>> {
   match input.split_first() {
     Some((first, rest)) => {
-      if let Some(group_contents_stream) = get_group_contents(first, delimiter) {
+      if let Some(ref group_contents_stream) = get_group_contents(first, delimiter) {
         Ok((rest, group_contents_stream))
       } else {
         Err(Err::Error((input, ErrorKind::TakeTill1)))
@@ -108,23 +108,24 @@ fn parse_literal_or_ident(input: TokenTreeSlice) -> TokenStreamIResult<String> {
   }
 }
 
-fn parse_attribute_contents(
-  (rest, input): (TokenTreeSlice, TokenTreeVec),
-) -> TokenStreamIResult<types::AttributeModifier> {
-  let (rest, (lhs, symbol, rhs)) = tuple((
-    // TODO parse idents with dashes in them
-    parse_ident,
-    parse_attribute_symbol,
-    parse_literal_or_ident
-  ))(&input)?;
-  println!("rest={:?}", rest);
-  println!("lhs {:?}, symbol {:?}, rhs {:?}", lhs, symbol, rhs);
+fn parse_attribute_contents<'a>(
+  (rest, input): (TokenTreeSlice<'a>, TokenTreeSlice<'a>),
+) -> TokenStreamIResult<'a, types::AttributeModifier> {
+  // let (rest, (lhs, symbol, rhs)) = tuple((
+  //   // TODO parse idents with dashes in them
+  //   parse_ident,
+  //   parse_attribute_symbol,
+  //   parse_literal_or_ident
+  // ))(&input)?;
+  // println!("rest={:?}", rest);
+  // println!("lhs {:?}, symbol {:?}, rhs {:?}", lhs, symbol, rhs);
 
   unimplemented!()
 }
 
 fn parse_attribute(input: TokenTreeSlice) -> TokenStreamIResult<types::AttributeModifier> {
-  parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents)
+  parse_group_with_delimiter(input, Some(Delimiter::Bracket))
+    .and_then(parse_attribute_contents)
 }
 
 #[proc_macro]
@@ -135,7 +136,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // but TokenStream only implements into_iter for some reason
   //
   // Turns out we are using a slice of TokenTree's, which also seems wrong.
-  let input = input.into_iter().collect::<Vec<TokenTree>>();
+  let input = input.into_iter().collect::<TokenTreeVec>();
 
   let foo = parse_attribute(&input);
   match foo {
