@@ -3,23 +3,24 @@ extern crate proc_macro;
 mod types;
 
 use nom::{
+  branch::alt,
   bytes::streaming::take_while_m_n,
   error::ErrorKind,
   sequence::tuple,
   Err,
   IResult,
   Needed,
-  branch::alt,
 };
 
 use proc_macro2::{
   Delimiter,
   Group,
-  TokenStream,
-  TokenTree,
   Ident,
   Literal,
   Punct,
+  Span,
+  TokenStream,
+  TokenTree,
 };
 
 type TokenTreeSlice<'a> = &'a [TokenTree];
@@ -51,14 +52,21 @@ fn get_group_contents<'a>(
 fn parse_group_with_delimiter<'a>(
   input: TokenTreeSlice<'a>,
   delimiter: Option<Delimiter>,
-) -> TokenStreamIResult<'a, TokenTreeSlice<'a>> {
+) -> TokenStreamIResult<'a, TokenStream> {
   match input.split_first() {
-    Some((first, rest)) => {
-      if let Some(ref group_contents_stream) = get_group_contents(first, delimiter) {
-        Ok((rest, group_contents_stream))
-      } else {
-        Err(Err::Error((input, ErrorKind::TakeTill1)))
-      }
+    Some((first, rest)) => match first {
+      TokenTree::Group(ref g) => {
+        if let Some(target_delimiter) = delimiter {
+          if (g.delimiter() == target_delimiter) {
+            Ok((rest, g.stream()))
+          } else {
+            Err(Err::Error((input, ErrorKind::TakeTill1)))
+          }
+        } else {
+          Ok((rest, g.stream()))
+        }
+      },
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
     None => Err(Err::Incomplete(Needed::Size(1))),
   }
@@ -71,25 +79,26 @@ fn parse_group_with_delimiter<'a>(
 //   Ok((rest, vec![g1, g2, g3]))
 // }
 
-fn parse_ident(input: TokenTreeSlice) -> TokenStreamIResult<Ident> {
-  match input.split_first() {
-    Some((first, rest)) => {
-      match first {
-        TokenTree::Ident(ident) => Ok((rest, ident.clone())),
-        _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-      }
-    },
-    None => Err(Err::Incomplete(Needed::Size(1))),
+fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
+  let cloned = input.clone();
+  if let Some((first_tree, rest)) = stream_to_tree_vec(input.clone()).split_first() {
+    match first_tree {
+      TokenTree::Ident(ident) => Ok((
+        rest.to_vec().into_iter().collect::<TokenStream>(),
+        ident.clone(),
+      )),
+      _ => Err(Err::Error((cloned, ErrorKind::TakeTill1))),
+    }
+  } else {
+    Err(Err::Incomplete(Needed::Size(1)))
   }
 }
 
 fn parse_attribute_symbol(input: TokenTreeSlice) -> TokenStreamIResult<String> {
   match input.split_first() {
-    Some((first, rest)) => {
-      match first {
-        TokenTree::Punct(punct) => Ok((rest, punct.to_string())),
-        _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-      }
+    Some((first, rest)) => match first {
+      TokenTree::Punct(punct) => Ok((rest, punct.to_string())),
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
     None => Err(Err::Incomplete(Needed::Size(1))),
   }
@@ -97,19 +106,17 @@ fn parse_attribute_symbol(input: TokenTreeSlice) -> TokenStreamIResult<String> {
 
 fn parse_literal_or_ident(input: TokenTreeSlice) -> TokenStreamIResult<String> {
   match input.split_first() {
-    Some((first, rest)) => {
-      match first {
-        TokenTree::Literal(l) => Ok((rest, l.to_string())),
-        TokenTree::Ident(i) => Ok((rest, i.to_string())),
-        _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-      }
+    Some((first, rest)) => match first {
+      TokenTree::Literal(l) => Ok((rest, l.to_string())),
+      TokenTree::Ident(i) => Ok((rest, i.to_string())),
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
     None => Err(Err::Incomplete(Needed::Size(1))),
   }
 }
 
 fn parse_attribute_contents<'a>(
-  (rest, input): (TokenTreeSlice<'a>, TokenTreeSlice<'a>),
+  (rest, input): (TokenTreeSlice<'a>, TokenStream),
 ) -> TokenStreamIResult<'a, types::AttributeModifier> {
   // let (rest, (lhs, symbol, rhs)) = tuple((
   //   // TODO parse idents with dashes in them
@@ -119,13 +126,17 @@ fn parse_attribute_contents<'a>(
   // ))(&input)?;
   // println!("rest={:?}", rest);
   // println!("lhs {:?}, symbol {:?}, rhs {:?}", lhs, symbol, rhs);
+  // let input = stream_to_tree_vec(input);
 
+  // let (rest, (lhs, symbol, rhs)) =
+  //   tuple((parse_ident, parse_attribute_symbol, parse_literal_or_ident))(&input)?;
+  // parse_ident(&input);
+  let something = tuple((parse_ident, parse_ident, parse_ident))(input);
   unimplemented!()
 }
 
 fn parse_attribute(input: TokenTreeSlice) -> TokenStreamIResult<types::AttributeModifier> {
-  parse_group_with_delimiter(input, Some(Delimiter::Bracket))
-    .and_then(parse_attribute_contents)
+  parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents)
 }
 
 #[proc_macro]
@@ -135,7 +146,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // this seems like a hack. What I want is an iterator of &TokenTree's,
   // but TokenStream only implements into_iter for some reason
   //
-  // Turns out we are using a slice of TokenTree's, which also seems wrong.
+  // (We actually need a slice of TokenTree's)
   let input = input.into_iter().collect::<TokenTreeVec>();
 
   let foo = parse_attribute(&input);
