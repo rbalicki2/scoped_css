@@ -3,9 +3,6 @@ extern crate proc_macro;
 mod types;
 
 use nom::{
-  branch::alt,
-  bytes::streaming::take_while_m_n,
-  combinator::{map, flat_map, map_parser},
   error::ErrorKind,
   sequence::tuple,
   Err,
@@ -15,11 +12,7 @@ use nom::{
 
 use proc_macro2::{
   Delimiter,
-  Group,
   Ident,
-  Literal,
-  Punct,
-  Span,
   TokenStream,
   TokenTree,
 };
@@ -79,13 +72,6 @@ fn parse_group_with_delimiter(
   }
 }
 
-// // Do not need this
-// fn many_groups(input: TokenTreeSlice) -> TokenStreamIResult<Vec<TokenStream>> {
-//   let parse_group = |input| parse_group_with_delimiter(input, None);
-//   let (rest, (g1, g2, g3)) = tuple((parse_group, parse_group, parse_group))(input)?;
-//   Ok((rest, vec![g1, g2, g3]))
-// }
-
 fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
   // println!("parse ident input {:?}", input);
   if let Some((first_tree, rest)) = stream_to_tree_vec(&input).split_first() {
@@ -108,16 +94,6 @@ fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult2<String> {
     },
     None => Err(Err::Incomplete(Needed::Size(1))),
   }
-  // let cloned = input.clone();
-
-  // match input.split_first() {
-  //   Some((first, rest)) => match first {
-  //     TokenTree::Punct(punct) => Ok((rest, punct.to_string())),
-  //     _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-  //   },
-  //   None => Err(Err::Incomplete(Needed::Size(1))),
-  // }
-  // unimplemented!()
 }
 
 fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult2<String> {
@@ -137,7 +113,6 @@ fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult2<String> {
 fn parse_attribute_contents_without_relation(
   input: TokenStream
 ) -> TokenStreamIResult2<types::AttributeModifier> {
-  println!("FOOOO!!!! {:?}", input);
   parse_ident(input)
     .map(|(rest, i)| (rest, types::AttributeModifier {
       attribute: i.to_string(),
@@ -165,7 +140,7 @@ fn parse_attribute_contents_with_relation(
 }
 
 fn ensure_consumed<T>((rest, t): (TokenStream, T)) -> TokenStreamIResult2<T> {
-  if (!rest.is_empty()) {
+  if !rest.is_empty() {
     Err(Err::Error((rest, ErrorKind::TakeTill1)))
   } else {
     Ok((rest, t))
@@ -212,25 +187,11 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
       let foo = format!("{:?}", some_vec);
       quote::quote!({
         #foo
-        // vec![
-        //   #(#some_vec),*
-        // ]
       })
     }
     .into(),
     _ => unimplemented!("NOOO"),
   }
-  // quote::quote!(123).into()
-
-  // let starts_with_group = parse_group_with_delimiter(tree_vec.as_slice(), None);
-
-  // println!("starts with group {:?}", starts_with_group);
-  // // println!("css input {}", input);
-
-  // // println!(
-  // //   "CSS is some ???? {:?}",
-  // //   get_group_contents(&input.into_iter().next().unwrap(), Some(Delimiter::Brace))
-  // // );
 
   // quote::quote!({
   //   #[derive(Debug, Clone)]
