@@ -63,7 +63,7 @@ fn parse_group_with_delimiter(
     Some((first, rest)) => match first {
       TokenTree::Group(ref g) => {
         if let Some(target_delimiter) = delimiter {
-          if (g.delimiter() == target_delimiter) {
+          if g.delimiter() == target_delimiter {
             Ok((slice_to_stream(rest), g.stream()))
           } else {
             Err(Err::Error((input, ErrorKind::TakeTill1)))
@@ -86,7 +86,7 @@ fn parse_group_with_delimiter(
 // }
 
 fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
-  println!("parse ident input {:?}", input);
+  // println!("parse ident input {:?}", input);
   if let Some((first_tree, rest)) = stream_to_tree_vec(&input).split_first() {
     match first_tree {
       TokenTree::Ident(ident) => Ok((slice_to_stream(rest), ident.clone())),
@@ -97,7 +97,16 @@ fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
   }
 }
 
+// TODO parse multiple adjacent symbols
 fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult2<String> {
+  let vec = stream_to_tree_vec(&input);
+  match vec.split_first() {
+    Some((first, rest)) => match first {
+      TokenTree::Punct(p) => Ok((slice_to_stream(rest), p.to_string())),
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
+    },
+    None => Err(Err::Incomplete(Needed::Size(1))),
+  }
   // let cloned = input.clone();
 
   // match input.split_first() {
@@ -107,49 +116,53 @@ fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult2<String> {
   //   },
   //   None => Err(Err::Incomplete(Needed::Size(1))),
   // }
-  unimplemented!()
+  // unimplemented!()
 }
 
-fn parse_literal_or_ident(input: TokenTreeSlice) -> TokenStreamIResult<String> {
-  match input.split_first() {
+fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult2<String> {
+  dbg!(&input);
+  let vec = stream_to_tree_vec(&input);
+  match vec.split_first() {
     Some((first, rest)) => match first {
-      TokenTree::Literal(l) => Ok((rest, l.to_string())),
-      TokenTree::Ident(i) => Ok((rest, i.to_string())),
+      TokenTree::Literal(l) => Ok((slice_to_stream(rest), l.to_string())),
+      TokenTree::Ident(i) => Ok((slice_to_stream(rest), i.to_string())),
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
     None => Err(Err::Incomplete(Needed::Size(1))),
   }
 }
 
+// TODO handle case where it's just an attribute
 fn parse_attribute_contents<'a>(
   (rest, input): (TokenStream, TokenStream),
 ) -> TokenStreamIResult2<types::AttributeModifier> {
-  // let (rest, (lhs, symbol, rhs)) = tuple((
-  //   // TODO parse idents with dashes in them
-  //   parse_ident,
-  //   parse_attribute_symbol,
-  //   parse_literal_or_ident
-  // ))(&input)?;
-  // println!("rest={:?}", rest);
-  // println!("lhs {:?}, symbol {:?}, rhs {:?}", lhs, symbol, rhs);
-  // let input = stream_to_tree_vec(input);
+  let cloned = input.clone();
+  let (rest, (attribute, symbol, rhs)) =
+    tuple((parse_ident, parse_attribute_symbol, parse_literal_or_ident))(input)?;
 
-  // let (rest, (lhs, symbol, rhs)) =
-  //   tuple((parse_ident, parse_attribute_symbol, parse_literal_or_ident))(&input)?;
-  // parse_ident(&input);
-  println!("ABC!");
-  let (rest, (lhs, symbol, rhs)) =
-    tuple((parse_ident, parse_attribute_symbol, parse_ident))(input)?;
-  // println!("something {:?}", something);
-  // let something: () = something;
-  unimplemented!()
+  if !rest.is_empty() {
+    return Err(Err::Error((cloned, ErrorKind::TakeTill1)));
+  }
+  let relation = types::AttributeRelation::from_strings(&symbol, rhs);
+  // not the correct error here?
+  let relation = relation.ok_or(Err::Error((cloned, ErrorKind::TakeTill1)))?;
+  println!("attr relation {:?}", relation);
+
+  // do we need to pass rest here? We know it's empty...
+  // or maybe there is a complete combinator
+  Ok((
+    rest,
+    types::AttributeModifier {
+      attribute: attribute.to_string(),
+      relation: Some(relation),
+    },
+  ))
 }
 
 fn parse_attribute(input: TokenStream) -> TokenStreamIResult2<types::AttributeModifier> {
-  let a =
-    parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents);
-  println!("a = {:?}", a);
-  unimplemented!()
+  parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents)
+  // println!("a = {:?}", a);
+  // unimplemented!()
 }
 
 #[proc_macro]
