@@ -28,8 +28,12 @@ type TokenTreeVec = Vec<TokenTree>;
 type TokenStreamIResult<'a, T> = IResult<TokenTreeSlice<'a>, T>;
 type TokenStreamIResult2<T> = IResult<TokenStream, T>;
 
-fn stream_to_tree_vec(input: TokenStream) -> TokenTreeVec {
-  input.into_iter().collect::<TokenTreeVec>()
+fn stream_to_tree_vec(input: &TokenStream) -> TokenTreeVec {
+  input.clone().into_iter().collect::<TokenTreeVec>()
+}
+
+fn slice_to_stream(input: TokenTreeSlice) -> TokenStream {
+  input.iter().map(|x| x.clone()).collect()
 }
 
 fn get_group_contents<'a>(
@@ -39,13 +43,12 @@ fn get_group_contents<'a>(
   match tree {
     TokenTree::Group(g) => match (delimiter, g.delimiter()) {
       (Some(target_delimiter), group_delimiter) if target_delimiter == group_delimiter => {
-        Some(g.stream())
+        Some(stream_to_tree_vec(&g.stream()))
       },
-      _ => Some(g.stream()),
+      _ => Some(stream_to_tree_vec(&g.stream())),
     },
     _ => None,
   }
-  .map(stream_to_tree_vec)
 }
 
 /// Parse and yield the contents of a group, if that group is the first item
@@ -54,18 +57,19 @@ fn parse_group_with_delimiter(
   input: TokenStream,
   delimiter: Option<Delimiter>,
 ) -> TokenStreamIResult2<TokenStream> {
-  let cloned = input.clone();
-  match input.split_first() {
+  // let cloned = input.clone();
+  let vec = stream_to_tree_vec(&input);
+  match vec.split_first() {
     Some((first, rest)) => match first {
       TokenTree::Group(ref g) => {
         if let Some(target_delimiter) = delimiter {
           if (g.delimiter() == target_delimiter) {
-            Ok((rest, g.stream()))
+            Ok((slice_to_stream(rest), g.stream()))
           } else {
             Err(Err::Error((input, ErrorKind::TakeTill1)))
           }
         } else {
-          Ok((rest, g.stream()))
+          Ok((slice_to_stream(rest), g.stream()))
         }
       },
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
@@ -82,28 +86,28 @@ fn parse_group_with_delimiter(
 // }
 
 fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
-  let cloned = input.clone();
-  if let Some((first_tree, rest)) = stream_to_tree_vec(input.clone()).split_first() {
+  println!("parse ident input {:?}", input);
+  if let Some((first_tree, rest)) = stream_to_tree_vec(&input).split_first() {
     match first_tree {
-      TokenTree::Ident(ident) => Ok((
-        rest.to_vec().into_iter().collect::<TokenStream>(),
-        ident.clone(),
-      )),
-      _ => Err(Err::Error((cloned, ErrorKind::TakeTill1))),
+      TokenTree::Ident(ident) => Ok((slice_to_stream(rest), ident.clone())),
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     }
   } else {
     Err(Err::Incomplete(Needed::Size(1)))
   }
 }
 
-fn parse_attribute_symbol(input: TokenTreeSlice) -> TokenStreamIResult<String> {
-  match input.split_first() {
-    Some((first, rest)) => match first {
-      TokenTree::Punct(punct) => Ok((rest, punct.to_string())),
-      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-    },
-    None => Err(Err::Incomplete(Needed::Size(1))),
-  }
+fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult2<String> {
+  // let cloned = input.clone();
+
+  // match input.split_first() {
+  //   Some((first, rest)) => match first {
+  //     TokenTree::Punct(punct) => Ok((rest, punct.to_string())),
+  //     _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
+  //   },
+  //   None => Err(Err::Incomplete(Needed::Size(1))),
+  // }
+  unimplemented!()
 }
 
 fn parse_literal_or_ident(input: TokenTreeSlice) -> TokenStreamIResult<String> {
@@ -118,7 +122,7 @@ fn parse_literal_or_ident(input: TokenTreeSlice) -> TokenStreamIResult<String> {
 }
 
 fn parse_attribute_contents<'a>(
-  (rest, input): (TokenTreeSlice<'a>, TokenStream),
+  (rest, input): (TokenStream, TokenStream),
 ) -> TokenStreamIResult2<types::AttributeModifier> {
   // let (rest, (lhs, symbol, rhs)) = tuple((
   //   // TODO parse idents with dashes in them
@@ -133,14 +137,18 @@ fn parse_attribute_contents<'a>(
   // let (rest, (lhs, symbol, rhs)) =
   //   tuple((parse_ident, parse_attribute_symbol, parse_literal_or_ident))(&input)?;
   // parse_ident(&input);
-  let something = tuple((parse_ident, parse_ident, parse_ident))(input);
+  println!("ABC!");
+  let (rest, (lhs, symbol, rhs)) =
+    tuple((parse_ident, parse_attribute_symbol, parse_ident))(input)?;
+  // println!("something {:?}", something);
   // let something: () = something;
   unimplemented!()
 }
 
 fn parse_attribute(input: TokenStream) -> TokenStreamIResult2<types::AttributeModifier> {
-  // parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents)
-  parse_group_with_delimiter(input, Some(Delimiter::Bracket));
+  let a =
+    parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents);
+  println!("a = {:?}", a);
   unimplemented!()
 }
 

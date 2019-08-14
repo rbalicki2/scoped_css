@@ -14,6 +14,15 @@ pub enum AttributeRelation {
   Contains(String),       // *=
 }
 
+impl AttributeRelation {
+  fn from_strings(s1: &str, s2: String) -> Option<AttributeRelation> {
+    match s1 {
+      "=" => Some(AttributeRelation::Equal(s2)),
+      _ => None,
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct AttributeModifier {
   pub attribute: String,
