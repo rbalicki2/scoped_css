@@ -8,6 +8,7 @@ use proc_macro2::{
   TokenStream,
   TokenTree,
   Ident,
+  Delimiter,
 };
 
 pub fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
@@ -20,3 +21,31 @@ pub fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
     Err(Err::Incomplete(Needed::Size(1)))
   }
 }
+
+/// Parse and yield the contents of a group, if that group is the first item
+/// in the token stream
+fn parse_group_with_delimiter(
+  input: TokenStream,
+  delimiter: Option<Delimiter>,
+) -> IResult<TokenStream, TokenStream> {
+  // let cloned = input.clone();
+  let vec = crate::util::stream_to_tree_vec(&input);
+  match vec.split_first() {
+    Some((first, rest)) => match first {
+      TokenTree::Group(ref g) => {
+        if let Some(target_delimiter) = delimiter {
+          if g.delimiter() == target_delimiter {
+            Ok((crate::util::slice_to_stream(rest), g.stream()))
+          } else {
+            Err(Err::Error((input, ErrorKind::TakeTill1)))
+          }
+        } else {
+          Ok((crate::util::slice_to_stream(rest), g.stream()))
+        }
+      },
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
+    },
+    None => Err(Err::Incomplete(Needed::Size(1))),
+  }
+}
+
