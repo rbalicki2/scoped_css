@@ -24,7 +24,7 @@ pub fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
 
 /// Parse and yield the contents of a group, if that group is the first item
 /// in the token stream
-fn parse_group_with_delimiter(
+pub fn parse_group_with_delimiter(
   input: TokenStream,
   delimiter: Option<Delimiter>,
 ) -> IResult<TokenStream, TokenStream> {

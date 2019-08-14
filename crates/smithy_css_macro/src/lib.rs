@@ -21,34 +21,6 @@ use proc_macro2::{
 
 type TokenStreamIResult<T> = IResult<TokenStream, T>;
 
-/// Parse and yield the contents of a group, if that group is the first item
-/// in the token stream
-fn parse_group_with_delimiter(
-  input: TokenStream,
-  delimiter: Option<Delimiter>,
-) -> TokenStreamIResult<TokenStream> {
-  // let cloned = input.clone();
-  let vec = util::stream_to_tree_vec(&input);
-  match vec.split_first() {
-    Some((first, rest)) => match first {
-      TokenTree::Group(ref g) => {
-        if let Some(target_delimiter) = delimiter {
-          if g.delimiter() == target_delimiter {
-            Ok((util::slice_to_stream(rest), g.stream()))
-          } else {
-            Err(Err::Error((input, ErrorKind::TakeTill1)))
-          }
-        } else {
-          Ok((util::slice_to_stream(rest), g.stream()))
-        }
-      },
-      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-    },
-    None => Err(Err::Incomplete(Needed::Size(1))),
-  }
-}
-
-
 // TODO parse multiple adjacent symbols
 fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult<String> {
   let vec = util::stream_to_tree_vec(&input);
@@ -106,7 +78,7 @@ fn parse_attribute_contents_with_relation(
 
 
 fn parse_attribute(input: TokenStream) -> TokenStreamIResult<types::AttributeModifier> {
-  parse_group_with_delimiter(input, Some(Delimiter::Bracket))
+  crate::core::parse_group_with_delimiter(input, Some(Delimiter::Bracket))
     .and_then(|(_rest, input)| 
       util::alt(
         // TODO ensure_consumed should happen within these calls
