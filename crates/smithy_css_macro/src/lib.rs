@@ -124,6 +124,7 @@ fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult2<String> {
   let vec = stream_to_tree_vec(&input);
   match vec.split_first() {
     Some((first, rest)) => match first {
+      // TODO strip quotes off of this string
       TokenTree::Literal(l) => Ok((slice_to_stream(rest), l.to_string())),
       TokenTree::Ident(i) => Ok((slice_to_stream(rest), i.to_string())),
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
