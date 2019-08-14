@@ -5,6 +5,7 @@ mod types;
 use nom::{
   branch::alt,
   bytes::streaming::take_while_m_n,
+  combinator::{map, flat_map, map_parser},
   error::ErrorKind,
   sequence::tuple,
   Err,
@@ -133,24 +134,27 @@ fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult2<String> {
   }
 }
 
-// TODO handle case where it's just an attribute
-fn parse_attribute_contents<'a>(
-  (rest, input): (TokenStream, TokenStream),
+fn parse_attribute_contents_without_relation(
+  input: TokenStream
+) -> TokenStreamIResult2<types::AttributeModifier> {
+  println!("FOOOO!!!! {:?}", input);
+  parse_ident(input)
+    .map(|(rest, i)| (rest, types::AttributeModifier {
+      attribute: i.to_string(),
+      relation: None,
+    }))
+}
+
+fn parse_attribute_contents_with_relation(
+  input: TokenStream,
 ) -> TokenStreamIResult2<types::AttributeModifier> {
   let cloned = input.clone();
   let (rest, (attribute, symbol, rhs)) =
     tuple((parse_ident, parse_attribute_symbol, parse_literal_or_ident))(input)?;
 
-  if !rest.is_empty() {
-    return Err(Err::Error((cloned, ErrorKind::TakeTill1)));
-  }
   let relation = types::AttributeRelation::from_strings(&symbol, rhs);
-  // not the correct error here?
   let relation = relation.ok_or(Err::Error((cloned, ErrorKind::TakeTill1)))?;
-  println!("attr relation {:?}", relation);
 
-  // do we need to pass rest here? We know it's empty...
-  // or maybe there is a complete combinator
   Ok((
     rest,
     types::AttributeModifier {
@@ -160,16 +164,41 @@ fn parse_attribute_contents<'a>(
   ))
 }
 
+fn ensure_consumed<T>((rest, t): (TokenStream, T)) -> TokenStreamIResult2<T> {
+  if (!rest.is_empty()) {
+    Err(Err::Error((rest, ErrorKind::TakeTill1)))
+  } else {
+    Ok((rest, t))
+  }
+}
+
+fn my_alt<T>(
+  b1: impl Fn(TokenStream) -> TokenStreamIResult2<T>,
+  b2: impl Fn(TokenStream) -> TokenStreamIResult2<T>,
+) -> impl Fn(TokenStream) -> TokenStreamIResult2<T> {
+  move |input| {
+    let cloned = input.clone();
+    b1(input)
+      .or_else(|_| b2(cloned))
+  }
+}
+
 fn parse_attribute(input: TokenStream) -> TokenStreamIResult2<types::AttributeModifier> {
-  parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(parse_attribute_contents)
-  // println!("a = {:?}", a);
-  // unimplemented!()
+  parse_group_with_delimiter(input, Some(Delimiter::Bracket))
+    .and_then(|(rest, input)| 
+      my_alt(
+        // TODO ensure_consumed should happen within these calls
+        parse_attribute_contents_with_relation,
+        parse_attribute_contents_without_relation,
+      )(input)
+    )
+    .and_then(ensure_consumed)
 }
 
 #[proc_macro]
 pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let input: TokenStream = input.into();
-  println!("{:?}", input);
+  println!("\ninput {:?}", input);
   // this seems like a hack. What I want is an iterator of &TokenTree's,
   // but TokenStream only implements into_iter for some reason
   //
@@ -177,6 +206,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
   let foo = parse_attribute(input);
+  println!("\nparse attribute result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
       let foo = format!("{:?}", some_vec);
@@ -190,7 +220,6 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     .into(),
     _ => unimplemented!("NOOO"),
   }
-  // println!("foo = {:?}", foo);
   // quote::quote!(123).into()
 
   // let starts_with_group = parse_group_with_delimiter(tree_vec.as_slice(), None);
