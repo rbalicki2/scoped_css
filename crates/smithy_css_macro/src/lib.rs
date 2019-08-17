@@ -8,7 +8,6 @@ mod util;
 
 use proc_macro2::TokenStream;
 
-// TODO parse multiple adjacent symbols
 #[proc_macro]
 pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let input: TokenStream = input.into();
