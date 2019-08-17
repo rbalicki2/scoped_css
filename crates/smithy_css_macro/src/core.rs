@@ -11,7 +11,8 @@ pub fn parse_ident(input: TokenStream) -> TokenStreamIResult<Ident> {
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     }
   } else {
-    Err(Err::Incomplete(Needed::Size(1)))
+    // Err(Err::Incomplete(Needed::Size(1)))
+    Err(Err::Error((input, ErrorKind::TakeTill1)))
   }
 }
 
@@ -38,7 +39,8 @@ pub fn parse_group_with_delimiter(
       },
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
-    None => Err(Err::Incomplete(Needed::Size(1))),
+    // None => Err(Err::Incomplete(Needed::Size(1))),
+    None => Err(Err::Error((input, ErrorKind::TakeTill1))),
   }
 }
 
@@ -51,6 +53,7 @@ pub fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult<String> 
       TokenTree::Ident(i) => Ok((crate::util::slice_to_stream(rest), i.to_string())),
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
-    None => Err(Err::Incomplete(Needed::Size(1))),
+    // None => Err(Err::Incomplete(Needed::Size(1))),
+    None => Err(Err::Error((input, ErrorKind::TakeTill1))),
   }
 }

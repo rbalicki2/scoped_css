@@ -10,7 +10,8 @@ fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult<String> {
       TokenTree::Punct(p) => Ok((crate::util::slice_to_stream(rest), p.to_string())),
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
     },
-    None => Err(Err::Incomplete(Needed::Size(1))),
+    // None => Err(Err::Incomplete(Needed::Size(1))),
+    None => Err(Err::Error((input, ErrorKind::TakeTill1))),
   }
 }
 
@@ -18,7 +19,7 @@ fn parse_attribute_contents_without_relation(
   input: TokenStream,
 ) -> TokenStreamIResult<crate::types::AttributeModifier> {
   crate::core::parse_ident(input).and_then(|(rest, i)| {
-    let (rest, _) = crate::util::ensure_consumed((rest, ()))?;
+    let (rest, _) = crate::util::ensure_consumed(rest)?;
     Ok((
       rest,
       crate::types::AttributeModifier {
@@ -42,7 +43,7 @@ fn parse_attribute_contents_with_relation(
   let relation = crate::types::AttributeRelation::from_strings(&symbol, rhs);
   let relation = relation.ok_or(Err::Error((cloned, ErrorKind::TakeTill1)))?;
 
-  let (rest, _) = crate::util::ensure_consumed((rest, ()))?;
+  let (rest, _) = crate::util::ensure_consumed(rest)?;
 
   Ok((
     rest,
