@@ -55,7 +55,7 @@ impl Deref for NestedSelector {
   }
 }
 
-/// A SelectorList is something like body .foo .bar, body .baz .baz,
+/// A SelectorList is something like body .foo .bar[a=b], body .baz .baz,
 /// which would be a vec of length 2
 #[derive(Debug, Clone)]
 pub struct SelectorList(Vec<NestedSelector>);
