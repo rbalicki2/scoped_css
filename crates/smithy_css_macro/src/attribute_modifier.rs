@@ -55,7 +55,9 @@ fn parse_attribute_contents_with_relation(
   ))
 }
 
-pub fn parse_attribute(input: TokenStream) -> TokenStreamIResult<crate::types::AttributeModifier> {
+pub fn parse_attribute_modifier(
+  input: TokenStream,
+) -> TokenStreamIResult<crate::types::AttributeModifier> {
   crate::core::parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(
     |(rest, input)| {
       crate::util::alt(
