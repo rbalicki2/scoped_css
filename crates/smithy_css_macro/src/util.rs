@@ -33,7 +33,6 @@ pub fn alt<T>(
 ) -> impl Fn(TokenStream) -> TokenStreamIResult<T> {
   move |input| {
     let cloned = input.clone();
-    b1(input)
-      .or_else(|_| b2(cloned))
+    b1(input).or_else(|_| b2(cloned))
   }
 }

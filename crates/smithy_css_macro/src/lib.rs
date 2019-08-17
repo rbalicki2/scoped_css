@@ -1,94 +1,14 @@
 extern crate proc_macro;
 
-mod types;
-mod util;
 mod attributes;
 mod core;
+mod parser_types;
+mod types;
+mod util;
 
-use nom::{
-  error::ErrorKind,
-  sequence::tuple,
-  Err,
-  IResult,
-  Needed,
-};
-
-use proc_macro2::{
-  Delimiter,
-  TokenStream,
-  TokenTree,
-};
-
-type TokenStreamIResult<T> = IResult<TokenStream, T>;
+use proc_macro2::TokenStream;
 
 // TODO parse multiple adjacent symbols
-fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult<String> {
-  let vec = util::stream_to_tree_vec(&input);
-  match vec.split_first() {
-    Some((first, rest)) => match first {
-      TokenTree::Punct(p) => Ok((util::slice_to_stream(rest), p.to_string())),
-      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-    },
-    None => Err(Err::Incomplete(Needed::Size(1))),
-  }
-}
-
-fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult<String> {
-  dbg!(&input);
-  let vec = util::stream_to_tree_vec(&input);
-  match vec.split_first() {
-    Some((first, rest)) => match first {
-      // TODO strip quotes off of this string
-      TokenTree::Literal(l) => Ok((util::slice_to_stream(rest), l.to_string())),
-      TokenTree::Ident(i) => Ok((util::slice_to_stream(rest), i.to_string())),
-      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-    },
-    None => Err(Err::Incomplete(Needed::Size(1))),
-  }
-}
-
-fn parse_attribute_contents_without_relation(
-  input: TokenStream
-) -> TokenStreamIResult<types::AttributeModifier> {
-  crate::core::parse_ident(input)
-    .map(|(rest, i)| (rest, types::AttributeModifier {
-      attribute: i.to_string(),
-      relation: None,
-    }))
-}
-
-fn parse_attribute_contents_with_relation(
-  input: TokenStream,
-) -> TokenStreamIResult<types::AttributeModifier> {
-  let cloned = input.clone();
-  let (rest, (attribute, symbol, rhs)) =
-    tuple((crate::core::parse_ident, parse_attribute_symbol, parse_literal_or_ident))(input)?;
-
-  let relation = types::AttributeRelation::from_strings(&symbol, rhs);
-  let relation = relation.ok_or(Err::Error((cloned, ErrorKind::TakeTill1)))?;
-
-  Ok((
-    rest,
-    types::AttributeModifier {
-      attribute: attribute.to_string(),
-      relation: Some(relation),
-    },
-  ))
-}
-
-
-fn parse_attribute(input: TokenStream) -> TokenStreamIResult<types::AttributeModifier> {
-  crate::core::parse_group_with_delimiter(input, Some(Delimiter::Bracket))
-    .and_then(|(_rest, input)| 
-      util::alt(
-        // TODO ensure_consumed should happen within these calls
-        parse_attribute_contents_with_relation,
-        parse_attribute_contents_without_relation,
-      )(input)
-    )
-    .and_then(util::ensure_consumed)
-}
-
 #[proc_macro]
 pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let input: TokenStream = input.into();
@@ -99,7 +19,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // (We actually need a slice of TokenTree's)
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
-  let foo = parse_attribute(input);
+  let foo = attributes::parse_attribute(input);
   println!("\nparse attribute result = {:?}", foo);
   match foo {
     Ok((_rest, some_vec)) => {

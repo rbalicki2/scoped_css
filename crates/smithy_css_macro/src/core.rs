@@ -1,17 +1,10 @@
-use nom::{
-  error::ErrorKind,
-  Err,
-  IResult,
-  Needed,
-};
+use crate::parser_types::*;
 use proc_macro2::{
-  TokenStream,
-  TokenTree,
-  Ident,
   Delimiter,
+  Ident,
 };
 
-pub fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
+pub fn parse_ident(input: TokenStream) -> TokenStreamIResult<Ident> {
   if let Some((first_tree, rest)) = crate::util::stream_to_tree_vec(&input).split_first() {
     match first_tree {
       TokenTree::Ident(ident) => Ok((crate::util::slice_to_stream(rest), ident.clone())),
@@ -27,7 +20,7 @@ pub fn parse_ident(input: TokenStream) -> IResult<TokenStream, Ident> {
 pub fn parse_group_with_delimiter(
   input: TokenStream,
   delimiter: Option<Delimiter>,
-) -> IResult<TokenStream, TokenStream> {
+) -> TokenStreamIResult<TokenStream> {
   // let cloned = input.clone();
   let vec = crate::util::stream_to_tree_vec(&input);
   match vec.split_first() {
@@ -49,3 +42,15 @@ pub fn parse_group_with_delimiter(
   }
 }
 
+pub fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult<String> {
+  let vec = crate::util::stream_to_tree_vec(&input);
+  match vec.split_first() {
+    Some((first, rest)) => match first {
+      // TODO strip quotes off of this string
+      TokenTree::Literal(l) => Ok((crate::util::slice_to_stream(rest), l.to_string())),
+      TokenTree::Ident(i) => Ok((crate::util::slice_to_stream(rest), i.to_string())),
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
+    },
+    None => Err(Err::Incomplete(Needed::Size(1))),
+  }
+}
