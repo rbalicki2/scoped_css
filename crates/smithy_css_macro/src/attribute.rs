@@ -55,16 +55,16 @@ fn parse_attribute_contents_with_relation(
   ))
 }
 
-pub fn parse_attribute_selector(
-  input: TokenStream,
-) -> TokenStreamIResult<crate::types::AttributeModifier> {
+pub fn parse_attribute_selector(input: TokenStream) -> TokenStreamIResult<crate::types::Modifier> {
   crate::core::parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(
     |(rest, input)| {
       crate::util::alt(
         parse_attribute_contents_without_relation,
         parse_attribute_contents_with_relation,
       )(input)
-      .map(|(_rest, x)| (rest, x))
+      .map(|(_rest, attribute_modifier)| {
+        (rest, crate::types::Modifier::Attribute(attribute_modifier))
+      })
     },
   )
 }
