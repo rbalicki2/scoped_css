@@ -1,8 +1,11 @@
 extern crate proc_macro;
 
-mod attribute_modifier;
+mod attribute;
+mod class;
 mod core;
+mod id;
 mod modifier;
+
 mod parser_types;
 mod types;
 mod util;
@@ -19,7 +22,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // (We actually need a slice of TokenTree's)
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
-  let foo = util::many_0(attribute_modifier::parse_attribute_modifier)(input);
+  let foo = util::many_0(modifier::parse_modifier)(input);
   println!("\nparse attribute result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {

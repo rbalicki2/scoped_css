@@ -59,18 +59,45 @@ pub fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult<String> 
   }
 }
 
-pub fn parse_punct(input: TokenStream, spacing: Option<Spacing>) -> TokenStreamIResult<Punct> {
+pub fn parse_punct(
+  input: TokenStream,
+  spacing: Option<Spacing>,
+  ch: Option<char>,
+) -> TokenStreamIResult<Punct> {
+  // N.B. this can probably be improved
   let vec = crate::util::stream_to_tree_vec(&input);
   match vec.split_first() {
     Some((first, rest)) => match first {
       TokenTree::Punct(p) => spacing.map_or_else(
-        || Ok((crate::util::slice_to_stream(rest), p.clone())),
+        || {
+          ch.map_or_else(
+            || Ok((crate::util::slice_to_stream(rest), p.clone())),
+            |ch| {
+              if ch == p.as_char() {
+                Ok((crate::util::slice_to_stream(rest), p.clone()))
+              } else {
+                Err(Err::Error((input.clone(), ErrorKind::TakeTill1)))
+              }
+            },
+          )
+        },
         |spacing| {
-          if spacing == p.spacing() {
-            Ok((crate::util::slice_to_stream(rest), p.clone()))
-          } else {
-            Err(Err::Error((input, ErrorKind::TakeTill1)))
-          }
+          ch.map_or_else(
+            || {
+              if spacing == p.spacing() {
+                Ok((crate::util::slice_to_stream(rest), p.clone()))
+              } else {
+                Err(Err::Error((input.clone(), ErrorKind::TakeTill1)))
+              }
+            },
+            |ch| {
+              if spacing == p.spacing() && ch == p.as_char() {
+                Ok((crate::util::slice_to_stream(rest), p.clone()))
+              } else {
+                Err(Err::Error((input.clone(), ErrorKind::TakeTill1)))
+              }
+            },
+          )
         },
       ),
       _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
@@ -83,8 +110,8 @@ pub fn parse_punct(input: TokenStream, spacing: Option<Spacing>) -> TokenStreamI
 /// followed by a single Punct with Spacing::Alone
 pub fn parse_grouped_puncts(input: TokenStream) -> TokenStreamIResult<Vec<Punct>> {
   let (rest, mut vec) =
-    crate::util::many_0(|input| parse_punct(input, Some(Spacing::Joint)))(input)?;
-  let (rest, punct) = parse_punct(rest, Some(Spacing::Alone))?;
+    crate::util::many_0(|input| parse_punct(input, Some(Spacing::Joint), None))(input)?;
+  let (rest, punct) = parse_punct(rest, Some(Spacing::Alone), None)?;
   vec.push(punct);
   Ok((rest, vec))
 }
