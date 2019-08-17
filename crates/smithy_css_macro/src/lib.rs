@@ -22,7 +22,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   println!("\nparse attribute result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
-      util::ensure_consumed(rest).unwrap();
+      util::ensure_consumed(rest).expect("outer macro: rest was not empty");
       let foo = format!("{:?}", some_vec);
       quote::quote!({
         #foo

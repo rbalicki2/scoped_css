@@ -18,6 +18,11 @@ impl AttributeRelation {
   pub fn from_strings(s1: &str, s2: String) -> Option<AttributeRelation> {
     match s1 {
       "=" => Some(AttributeRelation::Equal(s2)),
+      "~=" => Some(AttributeRelation::Containing(s2)),
+      "|=" => Some(AttributeRelation::BeginsWithWord(s2)),
+      "^=" => Some(AttributeRelation::BeginsWith(s2)),
+      "$=" => Some(AttributeRelation::EndsWith(s2)),
+      "*=" => Some(AttributeRelation::Contains(s2)),
       _ => None,
     }
   }
