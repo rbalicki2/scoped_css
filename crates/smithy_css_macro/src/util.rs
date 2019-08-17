@@ -37,7 +37,7 @@ pub fn alt<T>(
   }
 }
 
-pub fn many0<T>(
+pub fn many_0<T>(
   f: impl Fn(TokenStream) -> TokenStreamIResult<T>,
 ) -> impl Fn(TokenStream) -> TokenStreamIResult<Vec<T>> {
   move |mut i: TokenStream| {

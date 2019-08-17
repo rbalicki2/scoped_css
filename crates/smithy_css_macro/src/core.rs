@@ -2,6 +2,8 @@ use crate::parser_types::*;
 use proc_macro2::{
   Delimiter,
   Ident,
+  Punct,
+  Spacing,
 };
 
 pub fn parse_ident(input: TokenStream) -> TokenStreamIResult<Ident> {
@@ -22,7 +24,6 @@ pub fn parse_group_with_delimiter(
   input: TokenStream,
   delimiter: Option<Delimiter>,
 ) -> TokenStreamIResult<TokenStream> {
-  // let cloned = input.clone();
   let vec = crate::util::stream_to_tree_vec(&input);
   match vec.split_first() {
     Some((first, rest)) => match first {
@@ -56,4 +57,34 @@ pub fn parse_literal_or_ident(input: TokenStream) -> TokenStreamIResult<String> 
     // None => Err(Err::Incomplete(Needed::Size(1))),
     None => Err(Err::Error((input, ErrorKind::TakeTill1))),
   }
+}
+
+pub fn parse_punct(input: TokenStream, spacing: Option<Spacing>) -> TokenStreamIResult<Punct> {
+  let vec = crate::util::stream_to_tree_vec(&input);
+  match vec.split_first() {
+    Some((first, rest)) => match first {
+      TokenTree::Punct(p) => spacing.map_or_else(
+        || Ok((crate::util::slice_to_stream(rest), p.clone())),
+        |spacing| {
+          if spacing == p.spacing() {
+            Ok((crate::util::slice_to_stream(rest), p.clone()))
+          } else {
+            Err(Err::Error((input, ErrorKind::TakeTill1)))
+          }
+        },
+      ),
+      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
+    },
+    None => Err(Err::Error((input, ErrorKind::TakeTill1))),
+  }
+}
+
+/// this will match any number of Punct's that having Spacing::Joint
+/// followed by a single Punct with Spacing::Alone
+pub fn parse_grouped_puncts(input: TokenStream) -> TokenStreamIResult<Vec<Punct>> {
+  let (rest, mut vec) =
+    crate::util::many_0(|input| parse_punct(input, Some(Spacing::Joint)))(input)?;
+  let (rest, punct) = parse_punct(rest, Some(Spacing::Alone))?;
+  vec.push(punct);
+  Ok((rest, vec))
 }

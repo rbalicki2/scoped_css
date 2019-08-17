@@ -8,8 +8,6 @@ mod util;
 
 use proc_macro2::TokenStream;
 
-use nom::multi::many0;
-
 #[proc_macro]
 pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let input: TokenStream = input.into();
@@ -20,7 +18,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // (We actually need a slice of TokenTree's)
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
-  let foo = util::many0(attributes::parse_attribute)(input);
+  let foo = util::many_0(attributes::parse_attribute)(input);
   println!("\nparse attribute result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
@@ -31,7 +29,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
       })
     }
     .into(),
-    _ => unimplemented!("NOOO"),
+    _ => unimplemented!("outer macro was an Err"),
   }
 
   // quote::quote!({

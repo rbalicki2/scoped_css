@@ -4,15 +4,16 @@ use nom::sequence::tuple;
 use proc_macro2::Delimiter;
 
 fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult<String> {
-  let vec = crate::util::stream_to_tree_vec(&input);
-  match vec.split_first() {
-    Some((first, rest)) => match first {
-      TokenTree::Punct(p) => Ok((crate::util::slice_to_stream(rest), p.to_string())),
-      _ => Err(Err::Error((input, ErrorKind::TakeTill1))),
-    },
-    // None => Err(Err::Incomplete(Needed::Size(1))),
-    None => Err(Err::Error((input, ErrorKind::TakeTill1))),
-  }
+  let (rest, punct_vec) = crate::core::parse_grouped_puncts(input)?;
+
+  Ok((
+    rest,
+    punct_vec
+      .into_iter()
+      .map(|p| p.to_string())
+      .collect::<Vec<String>>()
+      .join(""),
+  ))
 }
 
 fn parse_attribute_contents_without_relation(
