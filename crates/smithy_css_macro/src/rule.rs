@@ -63,11 +63,7 @@ pub fn parse_rule(input: TokenStream) -> TokenStreamIResult<Rule> {
   let (rest, nested_selector_list) = crate::selector::parse_nested_selector_list(input)?;
   let (rest, group_contents) =
     crate::core::parse_group_with_delimiter(rest, Some(Delimiter::Brace))?;
-  // let (inner_rest, properties) = map(crate::util::many_0(parse_property), |rules| {
-  //   rules
-  //     .into_iter()
-  //     .collect::<std::collections::HashMap<_, _>>()
-  // })(group_contents)?;
+
   let (inner_rest, (properties, nested_rules)) = map(
     crate::util::many_0(parse_rule_or_property),
     |rule_or_property_vec| {
