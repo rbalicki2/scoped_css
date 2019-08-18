@@ -25,7 +25,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
   // let foo = util::many_0(util::many_0_joint(modifier::parse_modifier))(input);
   // let foo = util::many_0_joint(modifier::parse_modifier)(input);
-  let foo = selector::parse_selector(input);
+  let foo = selector::parse_nested_selector_list(input);
   println!("\nparse result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
