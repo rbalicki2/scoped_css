@@ -140,7 +140,7 @@ pub fn take_until_and_match<T>(
   move |mut input: TokenStream| {
     let mut acc: Vec<TokenTree> = vec![];
     loop {
-      if (input.is_empty()) {
+      if input.is_empty() {
         // is this correct? is this block necessary?
         return Err(Err::Error((input, ErrorKind::Many0)));
       }
