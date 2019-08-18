@@ -109,9 +109,7 @@ pub fn many_0_joint<T>(
     loop {
       match f(i.clone()) {
         Err(Err::Error(_)) => return Ok((i, acc)),
-        Err(e) => {
-          return Err(e);
-        },
+        Err(e) => return Err(e),
         Ok((i1, o)) => {
           // TODO I'm not sure if this block is necessary, but there was a similar
           // block in the original (nom) source code.
@@ -131,6 +129,30 @@ pub fn many_0_joint<T>(
             return Ok((i, acc));
           }
         },
+      }
+    }
+  }
+}
+
+pub fn take_until_and_match<T>(
+  predicate: impl Fn(TokenStream) -> TokenStreamIResult<T>,
+) -> impl Fn(TokenStream) -> TokenStreamIResult<(TokenStream, T)> {
+  move |mut input: TokenStream| {
+    let mut acc: Vec<TokenTree> = vec![];
+    loop {
+      if (input.is_empty()) {
+        // is this correct? is this block necessary?
+        return Err(Err::Error((input, ErrorKind::Many0)));
+      }
+      match predicate(input.clone()) {
+        Ok((rest, t)) => return Ok((rest, (slice_to_stream(&acc), t))),
+        Err(Err::Error(_)) => {
+          let vec = stream_to_tree_vec(&input);
+          let (first, rest) = vec.split_first().unwrap();
+          acc.push(first.clone());
+          input = slice_to_stream(&rest);
+        },
+        Err(e) => return Err(e),
       }
     }
   }

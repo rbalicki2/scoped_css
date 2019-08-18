@@ -1,3 +1,5 @@
+/* -------- SELECTORS -------- */
+
 // TODO handle +, >, pseudo selectors, etc.
 pub type Element = String;
 
@@ -48,3 +50,22 @@ pub struct Selector {
 
 pub type NestedSelector = Vec<Selector>;
 pub type NestedSelectorList = Vec<NestedSelector>;
+
+/* -------- PROPERTIES, RULES (putting it all together) -------- */
+
+// TODO this should be a struct, preventing you from setting
+// invalid css values, like margin: red
+pub type Properties = std::collections::HashMap<String, String>;
+
+/// This is the most important struct, the unit of functionality
+///
+/// TODO: A better description
+pub struct Rule {
+  nested_selector_list: NestedSelectorList,
+  property_block: PropertyBlock,
+}
+
+pub struct PropertyBlock {
+  properties: Properties,
+  nested_rules: Vec<Rule>,
+}

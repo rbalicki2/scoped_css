@@ -5,6 +5,7 @@ mod class;
 mod core;
 mod id;
 mod modifier;
+mod rule;
 mod selector;
 
 mod parser_types;
@@ -23,9 +24,8 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // (We actually need a slice of TokenTree's)
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
-  // let foo = util::many_0(util::many_0_joint(modifier::parse_modifier))(input);
-  // let foo = util::many_0_joint(modifier::parse_modifier)(input);
-  let foo = selector::parse_nested_selector_list(input);
+  // let foo = selector::parse_nested_selector_list(input);
+  let foo = rule::parse_property(input);
   println!("\nparse result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
