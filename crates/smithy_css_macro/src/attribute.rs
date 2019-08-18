@@ -1,19 +1,21 @@
 use crate::parser_types::*;
 
-use nom::sequence::tuple;
+use nom::{
+  combinator::map,
+  sequence::tuple,
+};
 use proc_macro2::Delimiter;
 
 fn parse_attribute_symbol(input: TokenStream) -> TokenStreamIResult<String> {
-  let (rest, punct_vec) = crate::core::parse_grouped_puncts(input)?;
-
-  Ok((
-    rest,
+  let (rest, punct_vec) = map(crate::core::parse_grouped_puncts, |punct_vec| {
     punct_vec
       .into_iter()
       .map(|p| p.to_string())
       .collect::<Vec<String>>()
-      .join(""),
-  ))
+      .join("")
+  })(input)?;
+
+  Ok((rest, punct_vec))
 }
 
 fn parse_attribute_contents_without_relation(
@@ -58,13 +60,13 @@ fn parse_attribute_contents_with_relation(
 pub fn parse_attribute_selector(input: TokenStream) -> TokenStreamIResult<crate::types::Modifier> {
   crate::core::parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(
     |(rest, input)| {
-      crate::util::alt(
-        parse_attribute_contents_without_relation,
-        parse_attribute_contents_with_relation,
+      map(
+        crate::util::alt(
+          parse_attribute_contents_without_relation,
+          parse_attribute_contents_with_relation,
+        ),
+        |attribute_modifier| crate::types::Modifier::Attribute(attribute_modifier),
       )(input)
-      .map(|(_rest, attribute_modifier)| {
-        (rest, crate::types::Modifier::Attribute(attribute_modifier))
-      })
     },
   )
 }

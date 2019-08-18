@@ -17,22 +17,19 @@ use crate::{
 };
 
 use nom::{
-  combinator::opt,
+  combinator::{
+    map,
+    opt,
+  },
   sequence::tuple,
 };
 use proc_macro2::Spacing;
 
 fn parse_selector(input: TokenStream) -> TokenStreamIResult<Selector> {
-  let (rest, ident) = opt(parse_ident)(input)?;
+  let (rest, element) = opt(map(parse_ident, |ident| ident.to_string()))(input)?;
   // TODO make sure the ident is adjacent
   let (rest, modifiers) = many_0_joint(crate::modifier::parse_modifier)(rest)?;
-  Ok((
-    rest,
-    Selector {
-      element: ident.map(|x| x.to_string()),
-      modifiers,
-    },
-  ))
+  Ok((rest, Selector { element, modifiers }))
 }
 
 fn parse_nested_selector(input: TokenStream) -> TokenStreamIResult<NestedSelector> {
