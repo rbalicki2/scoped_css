@@ -10,7 +10,7 @@ homepage = "https://www.smithy.rs"
 # documentation = "https://docs.smithy.rs/smd_macro"
 
 [dependencies]
-proc-macro2 = "0.4.30"
+proc-macro2 = { version = "1.0.1", features = ["span-locations"] }
 quote = "0.6.13"
 nom = "5.0.0"
 smithy = { version = "0.0.6", path = "../../../smithy/crates/smithy", features = [

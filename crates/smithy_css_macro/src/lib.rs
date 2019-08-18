@@ -14,17 +14,30 @@ mod util;
 
 use proc_macro2::TokenStream;
 
+use std::{
+  collections::hash_map::DefaultHasher,
+  hash::{
+    Hash,
+    Hasher,
+  },
+};
+
+fn get_prefix(input: &TokenStream) -> String {
+  // N.B. Is this correct? Multiple identical calls to css! will
+  // result in the same prefix. Though the styles will be the same,
+  // I'm not sure if we want that.
+  let mut hasher = DefaultHasher::new();
+  input.to_string().hash(&mut hasher);
+  hasher.finish().to_string()
+}
+
 #[proc_macro]
 pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let input: TokenStream = input.into();
   println!("\ninput {:?}", input);
-  // this seems like a hack. What I want is an iterator of &TokenTree's,
-  // but TokenStream only implements into_iter for some reason
-  //
-  // (We actually need a slice of TokenTree's)
-  // let input = input.into_iter().collect::<TokenTreeVec>();
 
-  // let foo = selector::parse_nested_selector_list(input);
+  let prefix = get_prefix(&input);
+
   let (rest, rule_set) = rule::parse_rule_set(input).expect("css! macro failed to parse");
   util::ensure_consumed(rest).expect("css! macro had left over characters");
   println!("\nparse result = {:#?}", rule_set);
