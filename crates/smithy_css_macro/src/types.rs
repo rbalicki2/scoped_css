@@ -1,6 +1,4 @@
 // TODO handle +, >, pseudo selectors, etc.
-use std::ops::Deref;
-
 pub type Element = String;
 
 // Going off of https://www.w3schools.com/css/css_attribute_selectors.asp

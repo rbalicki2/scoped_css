@@ -20,10 +20,7 @@ use nom::{
   combinator::opt,
   sequence::tuple,
 };
-use proc_macro2::{
-  Ident,
-  Spacing,
-};
+use proc_macro2::Spacing;
 
 fn parse_selector(input: TokenStream) -> TokenStreamIResult<Selector> {
   let (rest, ident) = opt(parse_ident)(input)?;
@@ -44,8 +41,17 @@ fn parse_nested_selector(input: TokenStream) -> TokenStreamIResult<NestedSelecto
 }
 
 pub fn parse_nested_selector_list(input: TokenStream) -> TokenStreamIResult<NestedSelectorList> {
-  let (rest, vec) = many_0(tuple((parse_nested_selector, |input| {
+  let (rest, nested_selectors) = many_0(tuple((parse_nested_selector, |input| {
     parse_punct(input, Some(Spacing::Alone), Some(','))
   })))(input)?;
-  Ok((rest, vec.into_iter().map(|x| x.0).collect()))
+
+  // drop the commas
+  let mut nested_selectors = nested_selectors
+    .into_iter()
+    .map(|x| x.0)
+    .collect::<Vec<_>>();
+
+  let (rest, nested_selector) = parse_nested_selector(rest)?;
+  nested_selectors.push(nested_selector);
+  Ok((rest, nested_selectors))
 }
