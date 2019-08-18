@@ -60,12 +60,14 @@ pub type Properties = std::collections::HashMap<String, String>;
 /// This is the most important struct, the unit of functionality
 ///
 /// TODO: A better description
+#[derive(Debug, Clone)]
 pub struct Rule {
-  nested_selector_list: NestedSelectorList,
-  property_block: PropertyBlock,
+  pub nested_selector_list: NestedSelectorList,
+  pub property_block: PropertyBlock,
 }
 
+#[derive(Debug, Clone)]
 pub struct PropertyBlock {
-  properties: Properties,
-  nested_rules: Vec<Rule>,
+  pub properties: Properties,
+  pub nested_rules: Vec<Rule>,
 }

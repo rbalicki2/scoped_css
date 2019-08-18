@@ -25,7 +25,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
   // let foo = selector::parse_nested_selector_list(input);
-  let foo = rule::parse_property(input);
+  let foo = rule::parse_rule(input);
   println!("\nparse result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
