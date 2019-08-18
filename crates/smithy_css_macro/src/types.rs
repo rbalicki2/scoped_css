@@ -66,6 +66,7 @@ pub struct Rule {
   pub property_block: PropertyBlock,
 }
 
+#[derive(Debug, Clone)]
 pub enum RuleOrProperty {
   Rule(Rule),
   Property((String, String)),
