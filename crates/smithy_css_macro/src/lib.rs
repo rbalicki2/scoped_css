@@ -25,19 +25,21 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   // let input = input.into_iter().collect::<TokenTreeVec>();
 
   // let foo = selector::parse_nested_selector_list(input);
-  let foo = util::many_0(rule::parse_rule)(input);
-  println!("\nparse result = {:?}", foo);
-  match foo {
-    Ok((rest, some_vec)) => {
-      util::ensure_consumed(rest).expect("css! macro had left over characters");
-      let foo = format!("{:?}", some_vec);
-      quote::quote!({
-        #foo
-      })
-    }
-    .into(),
-    _ => unimplemented!("css! macro failed to parse"),
-  }
+  let (rest, rule_set) = rule::parse_rule_set(input).expect("css! macro failed to parse");
+  util::ensure_consumed(rest).expect("css! macro had left over characters");
+  println!("\nparse result = {:#?}", rule_set);
+
+  let (classes, ids) = rule_set.classes_and_ids();
+  println!("classes {:?} ids {:?}", classes, ids);
+
+  // quote::quote!({
+  //   #[derive(Debug, Clone)]
+  //   struct CssClasses {
+  //     #class_names
+  //   }
+  // })
+
+  quote::quote!("ASDF").into()
 
   // quote::quote!({
   //   #[derive(Debug, Clone)]

@@ -9,6 +9,7 @@ use crate::{
     PropertyBlock,
     Rule,
     RuleOrProperty,
+    RuleSet,
   },
   util::{
     alt,
@@ -59,7 +60,7 @@ fn parse_rule_or_property(input: TokenStream) -> TokenStreamIResult<RuleOrProper
   )(input)
 }
 
-pub fn parse_rule(input: TokenStream) -> TokenStreamIResult<Rule> {
+fn parse_rule(input: TokenStream) -> TokenStreamIResult<Rule> {
   let (rest, nested_selector_list) = crate::selector::parse_nested_selector_list(input)?;
   let (rest, group_contents) =
     crate::core::parse_group_with_delimiter(rest, Some(Delimiter::Brace))?;
@@ -94,4 +95,9 @@ pub fn parse_rule(input: TokenStream) -> TokenStreamIResult<Rule> {
       },
     },
   ))
+}
+
+pub fn parse_rule_set(input: TokenStream) -> TokenStreamIResult<RuleSet> {
+  let (rest, rules) = crate::util::many_0(parse_rule)(input)?;
+  Ok((rest, RuleSet(rules)))
 }
