@@ -9,28 +9,38 @@ use crate::{
     PropertyBlock,
     Rule,
   },
-  util::take_until_and_match,
+  util::{
+    alt,
+    many_0_joint,
+    take_until_and_match,
+  },
 };
 
-use proc_macro2::Delimiter;
+use proc_macro2::{
+  Delimiter,
+  Spacing,
+};
 
 fn parse_property(input: TokenStream) -> TokenStreamIResult<(String, String)> {
-  // TODO don't lose track of spacing
-  let (rest, property_name) = parse_ident(input)?;
+  let (rest, property_name) = many_0_joint(alt(
+    |input| parse_ident(input).map(|(rest, ident)| (rest, ident.to_string())),
+    |input| parse_punct(input, None, Some('-')).map(|(rest, punct)| (rest, punct.to_string())),
+  ))(input)
+  .map(|(rest, vec)| (rest, vec.join("")))?;
+
   let (rest, _colon) = parse_punct(rest, None, Some(':'))?;
   let (rest, (property_values, _semicolon)) =
     take_until_and_match(|input| parse_punct(input, None, Some(';')))(rest)?;
-  Ok((
-    rest,
-    (
-      property_name.to_string(),
-      property_values
-        .into_iter()
-        .map(|x| x.to_string())
-        .collect::<Vec<_>>()
-        .join(" "),
-    ),
-  ))
+
+  // TODO: We lose track of spacing in some cases, like box-sizing: border-box and the like
+  // Maybe we can use the ol take_0(take_0_joint) trick
+  let property_values = property_values
+    .into_iter()
+    .map(|x| x.to_string())
+    .collect::<Vec<_>>()
+    .join(" ");
+
+  Ok((rest, (property_name, property_values)))
 }
 
 pub fn parse_rule(input: TokenStream) -> TokenStreamIResult<Rule> {
