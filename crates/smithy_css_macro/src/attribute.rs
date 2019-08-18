@@ -59,15 +59,20 @@ fn parse_attribute_contents_with_relation(
 
 pub fn parse_attribute_selector(input: TokenStream) -> TokenStreamIResult<crate::types::Modifier> {
   crate::core::parse_group_with_delimiter(input, Some(Delimiter::Bracket)).and_then(
-    |(_rest, input)| {
-      // TODO this _rest is sketch
-      map(
+    |(outer_rest, input)| {
+      // TODO can we do this without matching?
+      let res = map(
         crate::util::alt(
           parse_attribute_contents_without_relation,
           parse_attribute_contents_with_relation,
         ),
         |attribute_modifier| crate::types::Modifier::Attribute(attribute_modifier),
-      )(input)
+      )(input);
+
+      match res {
+        Ok((_rest, x)) => Ok((outer_rest, x)),
+        Err(e) => Err(e),
+      }
     },
   )
 }
