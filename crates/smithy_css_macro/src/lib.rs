@@ -29,14 +29,14 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   println!("\nparse result = {:?}", foo);
   match foo {
     Ok((rest, some_vec)) => {
-      util::ensure_consumed(rest).expect("outer macro: rest was not empty");
+      util::ensure_consumed(rest).expect("css! macro had left over characters");
       let foo = format!("{:?}", some_vec);
       quote::quote!({
         #foo
       })
     }
     .into(),
-    _ => unimplemented!("outer macro was an Err"),
+    _ => unimplemented!("css! macro failed to parse"),
   }
 
   // quote::quote!({
