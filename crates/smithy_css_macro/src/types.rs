@@ -131,7 +131,7 @@ impl RuleSet {
   pub fn classes_and_ids(&self) -> (HashSet<String>, HashSet<String>) {
     let mut classes = HashSet::new();
     let mut ids = HashSet::new();
-    for rule in self.0.iter() {
+    for rule in self.iter() {
       let (new_classes, new_ids) = rule.classes_and_ids();
       classes = classes.union(&new_classes).cloned().collect();
       ids = ids.union(&new_ids).cloned().collect();
