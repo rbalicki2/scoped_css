@@ -63,3 +63,67 @@ pub fn many_0<T>(
     }
   }
 }
+
+fn to_adjacency_vec(input: &TokenStream) -> Vec<bool> {
+  let mut starts_and_ends = input
+    .clone()
+    .into_iter()
+    .map(|x| {
+      let span = x.span();
+      (span.start(), span.end())
+    })
+    .peekable();
+
+  let mut adjacency_vec: Vec<bool> = vec![];
+  loop {
+    if let (Some((_current_start, current_end)), Some((next_start, _next_end))) =
+      (starts_and_ends.next(), starts_and_ends.peek())
+    {
+      adjacency_vec.push(current_end == *next_start);
+    } else {
+      break;
+    }
+  }
+  adjacency_vec
+}
+
+/// Like many_0, except it only continues to match if adjacent
+/// matched results have adjacent spans. That is, if
+/// first_matched.span().start() == last_matched.span().end()
+/// (TODO check that shit)
+pub fn many_0_joint<T>(
+  f: impl Fn(TokenStream) -> TokenStreamIResult<T>,
+) -> impl Fn(TokenStream) -> TokenStreamIResult<Vec<T>> {
+  move |mut i: TokenStream| {
+    let adjacency_vec = to_adjacency_vec(&i);
+    let len = adjacency_vec.len();
+    let is_adjacent = |remaining_length: usize| {
+      return *adjacency_vec.get(len - remaining_length).unwrap_or(&false);
+    };
+
+    let mut acc = vec![];
+    let mut last_len = stream_to_tree_vec(&i).len();
+    loop {
+      match f(i.clone()) {
+        Err(Err::Error(_)) => return Ok((i, acc)),
+        Err(e) => return Err(e),
+        Ok((i1, o)) => {
+          // TODO I'm not sure if this block is necessary, but there was a similar
+          // block in the original (nom) source code.
+          let new_len = stream_to_tree_vec(&i1).len();
+          if last_len == new_len {
+            return Err(Err::Error((i, ErrorKind::Many0)));
+          }
+          last_len = new_len;
+
+          i = i1;
+          acc.push(o);
+
+          if !is_adjacent(stream_to_tree_vec(&i).len()) {
+            return Ok((i, acc));
+          }
+        },
+      }
+    }
+  }
+}
