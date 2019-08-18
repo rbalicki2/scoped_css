@@ -11,7 +11,7 @@ homepage = "https://www.smithy.rs"
 
 [dependencies]
 proc-macro2 = { version = "1.0.1", features = ["span-locations"] }
-quote = "0.6.13"
+quote = "1.0.2"
 nom = "5.0.0"
 smithy = { version = "0.0.6", path = "../../../smithy/crates/smithy", features = [
   "smd-logs"

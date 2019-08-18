@@ -139,8 +139,11 @@ impl RuleSet {
     (classes, ids)
   }
 
-  pub fn as_css_string(prefix: String, classes: Vec<String>, ids: Vec<String>) -> String {
-    // TODO
-    unimplemented!()
+  pub fn as_css_string(
+    &self,
+    class_map: HashMap<String, String>,
+    id_map: HashMap<String, String>,
+  ) -> String {
+    "foo".into()
   }
 }
