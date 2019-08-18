@@ -48,25 +48,13 @@ pub struct Selector {
   pub modifiers: Vec<Modifier>,
 }
 
-/// A NestedSelector is something like body .foo .bar,
-/// which would be a vec of length 3
-#[derive(Debug, Clone)]
-pub struct NestedSelector(Vec<Selector>);
-
-impl Deref for NestedSelector {
-  type Target = Vec<Selector>;
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
 /// A SelectorList is something like body .foo .bar[a=b], body .baz .baz,
 /// which would be a vec of length 2
 #[derive(Debug, Clone)]
-pub struct SelectorList(Vec<NestedSelector>);
+pub struct SelectorList(Vec<Selector>);
 
 impl Deref for SelectorList {
-  type Target = Vec<NestedSelector>;
+  type Target = Vec<Selector>;
   fn deref(&self) -> &Self::Target {
     &self.0
   }

@@ -37,7 +37,7 @@ pub fn alt<T>(
   }
 }
 
-pub fn many_0<T>(
+pub fn many_0<T: std::fmt::Debug>(
   f: impl Fn(TokenStream) -> TokenStreamIResult<T>,
 ) -> impl Fn(TokenStream) -> TokenStreamIResult<Vec<T>> {
   move |mut i: TokenStream| {
@@ -52,6 +52,9 @@ pub fn many_0<T>(
           // block in the original (nom) source code.
           let new_len = stream_to_tree_vec(&i1).len();
           if last_len == new_len {
+            if acc.len() > 0 {
+              return Ok((i, acc));
+            }
             return Err(Err::Error((i, ErrorKind::Many0)));
           }
           last_len = new_len;
@@ -106,12 +109,17 @@ pub fn many_0_joint<T>(
     loop {
       match f(i.clone()) {
         Err(Err::Error(_)) => return Ok((i, acc)),
-        Err(e) => return Err(e),
+        Err(e) => {
+          return Err(e);
+        },
         Ok((i1, o)) => {
           // TODO I'm not sure if this block is necessary, but there was a similar
           // block in the original (nom) source code.
           let new_len = stream_to_tree_vec(&i1).len();
           if last_len == new_len {
+            if acc.len() > 0 {
+              return Ok((i, acc));
+            }
             return Err(Err::Error((i, ErrorKind::Many0)));
           }
           last_len = new_len;
