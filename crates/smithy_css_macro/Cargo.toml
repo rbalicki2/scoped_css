@@ -16,6 +16,7 @@ nom = "5.0.0"
 smithy = { version = "0.0.6", path = "../../../smithy/crates/smithy", features = [
   "smd-logs"
 ] }
+itertools = "0.8.0"
 
 [lib]
 proc-macro = true

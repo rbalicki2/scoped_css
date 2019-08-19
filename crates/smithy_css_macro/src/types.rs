@@ -36,10 +36,34 @@ impl AttributeRelation {
   }
 }
 
+impl ToString for AttributeRelation {
+  fn to_string(&self) -> String {
+    "=poop".to_string()
+    // unimplemented!()
+    // match self {
+
+    // }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct AttributeModifier {
   pub attribute: String,
   pub relation: Option<AttributeRelation>,
+}
+
+impl ToString for AttributeModifier {
+  fn to_string(&self) -> String {
+    format!(
+      "[{}{}]",
+      self.attribute,
+      self
+        .relation
+        .as_ref()
+        .map(|r| r.to_string())
+        .unwrap_or("".to_string())
+    )
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -50,13 +74,39 @@ pub enum Modifier {
 }
 
 // TODO is Selector { element: None, modifiers: vec![] } valid?
+// This is like body.some_class#some_id[some-attribute]
 #[derive(Debug, Clone)]
 pub struct Selector {
   pub element: Option<Element>,
   pub modifiers: Vec<Modifier>,
 }
 
+impl Selector {
+  pub fn transform_classes_and_ids(
+    &self,
+    classes: &HashMap<String, String>,
+    ids: &HashMap<String, String>,
+  ) -> String {
+    format!(
+      "{}{}",
+      self.element.as_ref().unwrap_or(&"".to_string()),
+      self
+        .modifiers
+        .iter()
+        .map(|modifier| match modifier {
+          Modifier::Class(class) => format!(".{}", classes.get(class).unwrap()),
+          Modifier::Id(id) => format!("#{}", ids.get(id).unwrap()),
+          Modifier::Attribute(attr) => attr.to_string(),
+        })
+        .collect::<Vec<String>>()
+        .join("")
+    )
+  }
+}
+
+// This is like body .foo, a vec of length 2
 pub type NestedSelector = Vec<Selector>;
+// This is like body .foo, span, p, a vec of length 3
 pub type NestedSelectorList = Vec<NestedSelector>;
 
 /* -------- PROPERTIES, RULES (putting it all together) -------- */
@@ -125,6 +175,54 @@ impl Rule {
     }
     (classes, ids)
   }
+
+  pub fn as_css_string(
+    &self,
+    classes: &HashMap<String, String>,
+    ids: &HashMap<String, String>,
+    parent_selectors: &Vec<String>,
+  ) -> String {
+    let selectors = self
+      .nested_selector_list
+      .iter()
+      .map(|nested_selector| {
+        nested_selector
+          .iter()
+          .map(|selector| selector.transform_classes_and_ids(&classes, &ids))
+          .collect::<Vec<String>>()
+          .join(" ")
+        // convert_nested_selector(classes, ids)
+      })
+      .collect::<Vec<String>>();
+
+    let combined_selectors = itertools::iproduct!(parent_selectors, selectors)
+      .map(|(v1, v2)| {
+        let mut v1 = v1.clone();
+        v1.push(' ');
+        v1.push_str(&v2);
+        v1
+      })
+      .collect::<Vec<String>>()
+      .join(", ");
+    println!("{:?}", combined_selectors);
+
+    let property_block_css = format!(
+      "{{\n{}\n}}",
+      self
+        .property_block
+        .properties
+        .iter()
+        .map(|(property_name, property_value)| format!("{}: {};", property_name, property_value))
+        .collect::<Vec<String>>()
+        .join("\n")
+    );
+    // println!("prop block {}", property_block_css);
+    // combined_selectors.map(|s| {});
+
+    // let all_selectors = cartesian product(selector_prefixes, selectors).join
+    // "foo\n".to_string()
+    format!("{}{}", combined_selectors, property_block_css)
+  }
 }
 
 impl RuleSet {
@@ -141,9 +239,18 @@ impl RuleSet {
 
   pub fn as_css_string(
     &self,
-    class_map: HashMap<String, String>,
-    id_map: HashMap<String, String>,
+    classes: &HashMap<String, String>,
+    ids: &HashMap<String, String>,
   ) -> String {
-    "foo".into()
+    let mut css_string: String = "".into();
+    for rule in self.iter() {
+      css_string.push_str(&rule.as_css_string(
+        &classes,
+        &ids,
+        // vec!["a".to_string(), "b".to_string()],
+        &vec!["".to_string()],
+      ));
+    }
+    css_string
   }
 }

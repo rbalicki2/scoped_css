@@ -22,13 +22,15 @@ use std::{
   collections::{
     hash_map::DefaultHasher,
     HashMap,
-    HashSet,
   },
   hash::{
     Hash,
     Hasher,
   },
 };
+
+#[macro_use]
+extern crate itertools;
 
 fn get_prefix(input: &TokenStream) -> String {
   // N.B. Is this correct? Multiple identical calls to css! will
@@ -100,7 +102,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let class_initialization = get_initialization(&classes);
   let id_declaration = get_declaration(&ids);
   let id_initialization = get_initialization(&ids);
-  let css_string = rule_set.as_css_string(classes, ids);
+  let css_string = rule_set.as_css_string(&classes, &ids);
 
   let ret = quote::quote!({
     #[derive(Debug, Clone)]
