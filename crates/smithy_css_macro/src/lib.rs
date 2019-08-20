@@ -86,13 +86,11 @@ fn into_hashmap(
 #[proc_macro]
 pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let input: TokenStream = input.into();
-  // println!("\ninput {:?}", input);
 
   let prefix = get_prefix(&input);
 
   let (rest, rule_set) = rule::parse_rule_set(input).expect("css! macro failed to parse");
   util::ensure_consumed(rest).expect("css! macro had left over characters");
-  // println!("\nparse result = {:#?}", rule_set);
 
   let (classes, ids) = rule_set.classes_and_ids();
   let classes = into_hashmap(classes.into_iter(), &prefix, "cl");
@@ -104,7 +102,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   let id_initialization = get_initialization(&ids);
   let css_string = rule_set.as_css_string(&classes, &ids);
 
-  let ret = quote::quote!({
+  quote::quote!({
     #[derive(Debug, Clone)]
     struct CssClasses {
       #class_declaration
@@ -136,34 +134,5 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
       }
     }
   })
-  .into();
-  println!("returned \n\n{}\n\n", ret);
-  ret
-  //   // TODO figure out why this doesn't work
-  //   // = help: message: attempt to subtract with overflow
-  //   //
-  //   // TODO: divide this into smithy_css_core and include this impl only later
-  //   // impl CssWrapper {
-  //   //   pub fn style_tag<'a>(&self) -> smithy::types::SmithyComponent<'a> {
-  //   //     // smithy::smd!(<style>
-  //   //     //   foo
-  //   //     // </style>)
-  //   //     let a = smithy::smd!(<div>a</div>);
-  //   //     smithy::smd!()
-  //   //   }
-  //   // }
-
-  //   impl ToString for CssWrapper {
-  //     fn to_string(&self) -> String {
-  //       format!(".{} {{ background-color: red; }}", self.classes.my_class)
-  //     }
-  //   }
-
-  //   let my_class = "foo".into();
-  //   CssWrapper {
-  //     classes: CssClasses { my_class },
-  //     ids: CssIds {},
-  //   }
-  // })
-  // .into()
+  .into()
 }
