@@ -191,7 +191,6 @@ impl Rule {
           .map(|selector| selector.transform_classes_and_ids(&classes, &ids))
           .collect::<Vec<String>>()
           .join(" ")
-        // convert_nested_selector(classes, ids)
       })
       .collect::<Vec<String>>();
 
