@@ -2,6 +2,7 @@ use crate::parser_types::*;
 
 use crate::{
   core::{
+    parse_any,
     parse_ident,
     parse_punct,
   },
@@ -13,6 +14,7 @@ use crate::{
   },
   util::{
     alt,
+    many_0,
     many_0_joint,
     take_until_and_match,
   },
@@ -40,15 +42,21 @@ fn parse_property(input: TokenStream) -> TokenStreamIResult<(String, String)> {
   let (rest, (property_values, _semicolon)) =
     take_until_and_match(|input| parse_punct(input, None, Some(';')))(rest)?;
 
-  // TODO: We lose track of spacing in some cases, like box-sizing: border-box and the like
-  // Maybe we can use the ol take_0(take_0_joint) trick
-  let property_values = property_values
+  let (_rest, grouped_property_values) = many_0(many_0_joint(parse_any))(property_values)?;
+
+  let property_values_string = grouped_property_values
     .into_iter()
-    .map(|x| x.to_string())
+    .map(|vec| {
+      vec
+        .into_iter()
+        .map(|g| g.to_string())
+        .collect::<Vec<_>>()
+        .join("")
+    })
     .collect::<Vec<_>>()
     .join(" ");
 
-  Ok((rest, (property_name, property_values)))
+  Ok((rest, (property_name, property_values_string)))
 }
 
 fn parse_rule_or_property(input: TokenStream) -> TokenStreamIResult<RuleOrProperty> {

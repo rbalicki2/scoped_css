@@ -6,6 +6,14 @@ use proc_macro2::{
   Spacing,
 };
 
+pub fn parse_any(input: TokenStream) -> TokenStreamIResult<TokenTree> {
+  if let Some((first_tree, rest)) = crate::util::stream_to_tree_vec(&input).split_first() {
+    Ok((crate::util::slice_to_stream(rest), first_tree.clone()))
+  } else {
+    Err(Err::Error((input, ErrorKind::TakeTill1)))
+  }
+}
+
 pub fn parse_ident(input: TokenStream) -> TokenStreamIResult<Ident> {
   if let Some((first_tree, rest)) = crate::util::stream_to_tree_vec(&input).split_first() {
     match first_tree {

@@ -68,6 +68,7 @@ pub fn many_0<T: std::fmt::Debug>(
 }
 
 fn to_adjacency_vec(input: &TokenStream) -> Vec<bool> {
+  // TODO this can probably return an iterator instead of a Vec
   let mut starts_and_ends = input
     .clone()
     .into_iter()
