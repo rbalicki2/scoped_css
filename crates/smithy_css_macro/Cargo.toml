@@ -13,9 +13,6 @@ homepage = "https://www.smithy.rs"
 proc-macro2 = { version = "1.0.1", features = ["span-locations"] }
 quote = "1.0.2"
 nom = "5.0.0"
-smithy = { version = "0.0.6", path = "../../../smithy/crates/smithy", features = [
-  "smd-logs"
-] }
 itertools = "0.8.0"
 
 [lib]
