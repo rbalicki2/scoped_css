@@ -202,9 +202,7 @@ impl Rule {
         v1.push_str(&v2);
         v1
       })
-      .collect::<Vec<String>>()
-      .join(", ");
-    println!("{:?}", combined_selectors);
+      .collect::<Vec<String>>();
 
     let property_block_css = format!(
       "{{\n{}\n}}",
@@ -216,12 +214,18 @@ impl Rule {
         .collect::<Vec<String>>()
         .join("\n")
     );
-    // println!("prop block {}", property_block_css);
-    // combined_selectors.map(|s| {});
 
-    // let all_selectors = cartesian product(selector_prefixes, selectors).join
-    // "foo\n".to_string()
-    format!("{}{}", combined_selectors, property_block_css)
+    let mut css_string = format!("{}{}", combined_selectors.join(", "), property_block_css);
+    let inner_css = self
+      .property_block
+      .nested_rules
+      .iter()
+      .map(|rule| rule.as_css_string(classes, ids, &combined_selectors))
+      .collect::<Vec<_>>()
+      .join("");
+
+    css_string.push_str(&inner_css);
+    css_string
   }
 }
 
@@ -244,12 +248,7 @@ impl RuleSet {
   ) -> String {
     let mut css_string: String = "".into();
     for rule in self.iter() {
-      css_string.push_str(&rule.as_css_string(
-        &classes,
-        &ids,
-        // vec!["a".to_string(), "b".to_string()],
-        &vec!["".to_string()],
-      ));
+      css_string.push_str(&rule.as_css_string(&classes, &ids, &vec!["".to_string()]));
     }
     css_string
   }

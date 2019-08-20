@@ -137,7 +137,7 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     }
   })
   .into();
-  println!("returned \n\n{}", ret);
+  println!("returned \n\n{}\n\n", ret);
   ret
   //   // TODO figure out why this doesn't work
   //   // = help: message: attempt to subtract with overflow
