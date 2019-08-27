@@ -88,14 +88,14 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "smithy_css"
+name = "scoped_css"
 version = "0.0.1"
 dependencies = [
- "smithy_css_macro 0.0.1",
+ "scoped_css_macro 0.0.1",
 ]
 
 [[package]]
-name = "smithy_css_macro"
+name = "scoped_css_macro"
 version = "0.0.1"
 dependencies = [
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",

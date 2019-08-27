@@ -136,3 +136,57 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
   })
   .into()
 }
+
+#[proc_macro]
+pub fn static_css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+  let input: TokenStream = input.into();
+
+  let prefix = get_prefix(&input);
+
+  let (rest, rule_set) = rule::parse_rule_set(input).expect("css! macro failed to parse");
+  util::ensure_consumed(rest).expect("css! macro had left over characters");
+
+  let (classes, ids) = rule_set.classes_and_ids();
+  let classes = into_hashmap(classes.into_iter(), &prefix, "cl");
+  let ids = into_hashmap(ids.into_iter(), &prefix, "id");
+
+  let class_declaration = get_declaration(&classes);
+  let class_initialization = get_initialization(&classes);
+  let id_declaration = get_declaration(&ids);
+  let id_initialization = get_initialization(&ids);
+  let css_string = rule_set.as_css_string(&classes, &ids);
+
+  quote::quote!(
+    #[derive(Debug, Clone)]
+    struct CssClasses {
+      #class_declaration
+    }
+
+    #[derive(Debug, Clone)]
+    struct CssIds {
+      #id_declaration
+    }
+
+    #[derive(Debug, Clone)]
+    struct CssProperties {
+      pub ids: CssIds,
+      pub classes: CssClasses,
+    }
+
+    impl CssProperties {
+      pub fn as_css_string(&self) -> &'static str {
+        #css_string
+      }
+    }
+
+    static css: CssProperties = CssProperties {
+      ids: CssIds {
+        #id_initialization
+      },
+      classes: CssClasses {
+        #class_initialization
+      }
+    };
+  )
+  .into()
+}

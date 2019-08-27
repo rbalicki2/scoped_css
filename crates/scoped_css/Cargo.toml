@@ -1,13 +1,13 @@
 [package]
-name = "smithy_css_macro"
+name = "scoped_css_macro"
 description = "A crate for the css! macro"
 license = "MIT/Apache-2.0"
 version = "0.0.1"
 authors = ["Robert Balicki <robert.balicki@gmail.com>"]
 edition = "2018"
-repository = "https://github.com/rbalicki2/smithy_css_macro"
-homepage = "https://www.smithy.rs"
-# documentation = "https://docs.smithy.rs/smd_macro"
+repository = "https://github.com/rbalicki2/scoped_css_macro"
+homepage = "https://www.scoped.rs"
+# documentation = "https://docs.scoped.rs/smd_macro"
 
 [dependencies]
 proc-macro2 = { version = "1.0.1", features = ["span-locations"] }
